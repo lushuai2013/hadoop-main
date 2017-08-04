@@ -34,6 +34,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.security.UserGroupInformation;
 
 /**
+ * 在Namenode启动时初始化NameNodeHttpServer调用setupServlets注册的FsckServlet函数
+ * 然后调用NamenodeFsck检查集群
  * This class is used in Namesystem's web server to do fsck on namenode.
  */
 @InterfaceAudience.Private

@@ -3520,7 +3520,8 @@ public class BlockManager {
   boolean isNeededReplication(Block b, int expected, int current) {
     return current < expected || !blockHasEnoughRacks(b);
   }
-  
+
+  //blockManager的getMissingBlocksCount方法取的就是损坏块队列的大小.
   public long getMissingBlocksCount() {
     // not locking
     return this.neededReplications.getCorruptBlockSize();
@@ -3598,7 +3599,7 @@ public class BlockManager {
                                                      startingBlockId);
   }
 
-  /**
+  /**获取损坏块的block迭代器
    * Return an iterator over the set of blocks for which there are no replicas.
    */
   public Iterator<Block> getCorruptReplicaBlockIterator() {

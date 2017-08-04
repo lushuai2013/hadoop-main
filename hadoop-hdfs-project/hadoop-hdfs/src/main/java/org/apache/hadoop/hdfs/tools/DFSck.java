@@ -46,6 +46,14 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 /**
+ * Fsck过程的调用指的是从终端机器输入到最终fsck在HDFS内部被执行的整个过程.中间穿过的类的其实不多
+ * DFSck-->FsckServlet-->NamenodeFsck
+ * 1.输入fsck 直接调用到的就是此类.DFSck内部会发送http请求的方式,根据参数构造URL请求地址,发送到下一个处理对象中.
+ * 2.下一个处理对象就是FsckServlet.FsckServlet在这里相当于一个过渡者,马上调用真正操作类NamenodeFsck.
+ * 3.NamenodeFsck在这里会取出请求参数,然后在HDFS内部做真正的fsck检测操作.
+ *
+ * FsckServlet:是在NameNodeHttpServer在Namenode启动时初始化调用setupServlets,注册的FsckServlet
+ *
  * This class provides rudimentary checking of DFS volumes for errors and
  * sub-optimal conditions.
  * <p>The tool scans all files and directories, starting from an indicated
@@ -256,7 +264,8 @@ public class DFSck extends Configured implements Tool {
 
   private int doWork(final String[] args) throws IOException {
     final StringBuilder url = new StringBuilder();
-    
+
+    //fsck对应的FsckServlet的处理类
     url.append("/fsck?ugi=").append(ugi.getShortUserName());
     String dir = null;
     boolean doListCorruptFileBlocks = false;
@@ -322,6 +331,7 @@ public class DFSck extends Configured implements Tool {
     url.insert(0, namenodeAddress.toString());
     url.append("&path=").append(URLEncoder.encode(
         Path.getPathWithoutSchemeAndAuthority(dirpath).toString(), "UTF-8"));
+    //打印执行fsck命令前打印请求参数
     System.err.println("Connecting to namenode via " + url.toString());
 
     if (doListCorruptFileBlocks) {

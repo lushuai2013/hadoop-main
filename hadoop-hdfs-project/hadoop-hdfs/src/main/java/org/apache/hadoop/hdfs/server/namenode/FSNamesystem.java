@@ -6542,9 +6542,9 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
                               "replication queues have not been initialized.");
       }
       // print a limited # of corrupt files per call
-
+      // 获取损坏块的block迭代器
       final Iterator<Block> blkIterator = blockManager.getCorruptReplicaBlockIterator();
-
+      // 取出cookie值作为标记位,跳过标记下标之前的文件,代表已经浏览过
       int skip = getIntCookie(cookieTab[0]);
       for (int i = 0; i < skip && blkIterator.hasNext(); i++) {
         blkIterator.next();
@@ -6553,6 +6553,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       while (blkIterator.hasNext()) {
         Block blk = blkIterator.next();
         final INode inode = (INode)blockManager.getBlockCollection(blk);
+        //更新skip跳过值
         skip++;
         if (inode != null && blockManager.countNodes(blk).liveReplicas() == 0) {
           String src = FSDirectory.getFullPathName(inode);
@@ -6564,6 +6565,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
           }
         }
       }
+      //更新cookie标记值
       cookieTab[0] = String.valueOf(skip);
       if (LOG.isDebugEnabled()) {
         LOG.debug("list corrupt file blocks returned: " + count);

@@ -81,7 +81,7 @@ import org.apache.hadoop.util.Time;
 
 import com.google.common.annotations.VisibleForTesting;
 
-/**
+/**NamenodeFsck的fsck处理
  * This class provides rudimentary checking of DFS volumes for errors and
  * sub-optimal conditions.
  * <p>The tool scans all files and directories, starting from an indicated
@@ -119,7 +119,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
   private final NetworkTopology networktopology;
   private final int totalDatanodes;
   private final InetAddress remoteAddress;
-
+  //以下这些布尔类型的变量对应的就是控制fsck帮助信息所展示的各个参数
   private String lostFound = null;
   private boolean lfInited = false;
   private boolean lfInitedOk = false;
@@ -314,7 +314,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
       LOG.info(msg);
       out.println(msg);
       namenode.getNamesystem().logFsckEvent(path, remoteAddress);
-
+      //-includeSnapshots  此参数会获取到namenode快照中的目录信息
       if (snapshottableDirs != null) {
         SnapshottableDirectoryStatus[] snapshotDirs = namenode.getRpcServer()
             .getSnapshottableDirListing();
@@ -327,7 +327,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
 
       final HdfsFileStatus file = namenode.getRpcServer().getFileInfo(path);
       if (file != null) {
-
+        //-list-corruptfileblocks,展示丢失/损坏的块.
         if (showCorruptFileBlocks) {
           listCorruptFileBlocks();
           return;
@@ -337,7 +337,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
           storageTypeSummary = new StoragePolicySummary(
               namenode.getNamesystem().getBlockManager().getStoragePolicies());
         }
-
+        //fsck的默认处理方法指的就是fsck+path的方法
         Result res = new Result(conf);
 
         check(path, file, res);
@@ -385,6 +385,10 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
     }
   }
 
+  /**
+   * 方法最终会调用到FSNamesystem的listCorruptFileBlocks方法
+   * @throws IOException
+     */
   private void listCorruptFileBlocks() throws IOException {
     Collection<FSNamesystem.CorruptFileBlockInfo> corruptFiles = namenode.
       getNamesystem().listCorruptFileBlocks(path, currentCookie);
@@ -412,6 +416,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
     boolean isOpen = false;
 
     if (file.isDir()) {
+      //如果快照目录包含此路径,则递归快照目录下的path
       if (snapshottableDirs != null && snapshottableDirs.contains(path)) {
         String snapshotPath = (path.endsWith(Path.SEPARATOR) ? path : path
             + Path.SEPARATOR)
@@ -434,6 +439,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
           return;
         }
         HdfsFileStatus[] files = thisListing.getPartialListing();
+        //递归变量此path的子文件,如果此path是目录的话
         for (int i = 0; i < files.length; i++) {
           check(path, files[i], res);
         }
@@ -466,6 +472,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
     if (blocks == null) { // the file is deleted
       return;
     }
+    //分析检测文件时,会进行相应指标的统计值更新
     isOpen = blocks.isUnderConstruction();
     if (isOpen && !showOpenFiles) {
       // We collect these stats about open files to report with default options
@@ -494,13 +501,17 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
     int misReplicatedPerFile = 0;
     StringBuilder report = new StringBuilder();
     int i = 0;
+    //下面是关键的判断path下所属的block块中的损坏块的判断逻辑:
     for (LocatedBlock lBlk : blocks.getLocatedBlocks()) {
       ExtendedBlock block = lBlk.getBlock();
+      //这里直接利用了LocatedBlock内部的isCorrupt的方法,然后进行corrupt计数累加
       boolean isCorrupt = lBlk.isCorrupt();
       String blkName = block.toString();
       DatanodeInfo[] locs = lBlk.getLocations();
+      //重新进行块副本数的统计
       NumberReplicas numberReplicas =
           namenode.getNamesystem().getBlockManager().countNodes(block.getLocalBlock());
+      //获取存在的副本数
       int liveReplicas = numberReplicas.liveReplicas();
       res.totalReplicas += liveReplicas;
       short targetFileReplication = file.getReplication();
@@ -512,6 +523,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
         res.excessiveReplicas += (liveReplicas - targetFileReplication);
         res.numOverReplicatedBlocks += 1;
       }
+      //-storagepolicies
       //keep track of storage tier counts
       if (this.showStoragePolcies && lBlk.getStorageTypes() != null) {
         StorageType[] storageTypes = lBlk.getStorageTypes();
@@ -555,6 +567,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
                     block + ". " + blockPlacementStatus.getErrorDescription());
       }
       report.append(i + ". " + blkName + " len=" + block.getNumBytes());
+      //如果当前副本数确实为0,则表明已经是missing块
       if (liveReplicas == 0) {
         report.append(" MISSING!");
         res.addMissing(block.toString(), block.getNumBytes());
@@ -562,6 +575,7 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
         missize += block.getNumBytes();
       } else {
         report.append(" repl=" + liveReplicas);
+        //-locations/-racks
         if (showLocations || showRacks) {
           StringBuilder sb = new StringBuilder("[");
           for (int j = 0; j < locs.length; j++) {
@@ -587,6 +601,9 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
       if (isOpen) {
         LOG.info("Fsck: ignoring open file " + path);
       } else {
+        //这2个命令作用是找到损坏块之后,打算要做什么事情
+        //其实这2个命令的还是比较有用的.如果集群中存在大量损坏块数据的情况时,如果不及时进行清理,会出现大量客户端读写操作的失败,
+        //因为元数据虽然存在,但是真实数据已经损坏,读写操作必然会抛出异常.
         if (doMove) copyBlocksToLostFound(parent, file, blocks);
         if (doDelete) deleteCorruptedFile(path);
       }
@@ -602,7 +619,9 @@ public class NamenodeFsck implements DataEncryptionKeyFactory {
       }
     }
   }
-
+  /**
+   *LostFound指的是/lost+found目录,下,就是说-move参数会将损坏块文件,移至此目录下,而-delet则会调用直接删除的方法
+   */
   private void deleteCorruptedFile(String path) {
     try {
       namenode.getRpcServer().delete(path, true);

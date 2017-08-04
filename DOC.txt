@@ -1,0 +1,2 @@
+1.  hdfs fsck介绍
+    http://blog.csdn.net/Androidlushangderen/article/details/50996821
