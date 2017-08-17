@@ -48,6 +48,8 @@ public abstract class CopyListing extends Configured {
   private Credentials credentials;
 
   /**
+   * 数据写入的整体逻辑就是遍历源路径下所有目录和文件，把每个文件的相对路径和它的CopyListingFileStatus以“K-V”对的形式写入fileList.seq每行中
+   *
    * Build listing function creates the input listing that distcp uses to
    * perform the copy.
    *
@@ -83,7 +85,7 @@ public abstract class CopyListing extends Configured {
     validatePaths(options);
     doBuildListing(pathToListFile, options);
     Configuration config = getConf();
-
+    //设置fileList.seq 文件路径
     config.set(DistCpConstants.CONF_LABEL_LISTING_FILE_PATH, pathToListFile.toString());
     config.setLong(DistCpConstants.CONF_LABEL_TOTAL_BYTES_TO_BE_COPIED, getBytesToCopy());
     config.setLong(DistCpConstants.CONF_LABEL_TOTAL_NUMBER_OF_RECORDS, getNumberOfPaths());

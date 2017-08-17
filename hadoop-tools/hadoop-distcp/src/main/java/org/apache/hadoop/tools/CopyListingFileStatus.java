@@ -40,6 +40,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
+ * DISTCP为了更好的处理数据，重新继承并封装了CopyListingFileStatus类  (FileStatus)
  * CopyListingFileStatus is a specialized subclass of {@link FileStatus} for
  * attaching additional data members useful to distcp.  This class does not
  * override {@link FileStatus#compareTo}, because the additional data members

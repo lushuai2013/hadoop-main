@@ -140,6 +140,8 @@ public class SimpleCopyListing extends CopyListing {
     doBuildListing(getWriter(pathToListingFile), options);
   }
   /**
+   * 收集文件列表,写入sequence文件
+   *
    * Collect the list of 
    *   {@literal <sourceRelativePath, sourceFileStatus>}
    * to be copied and write to the sequence file. In essence, any file or

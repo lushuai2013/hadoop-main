@@ -122,6 +122,7 @@ public class DistCpUtils {
    */
   public static Class<? extends InputFormat> getStrategy(Configuration conf,
                                                                  DistCpOptions options) {
+    //confLabel=distcp.{dynamic|static}.strategy.impl
     String confLabel = "distcp."
         + StringUtils.toLowerCase(options.getCopyStrategy())
         + ".strategy" + ".impl";

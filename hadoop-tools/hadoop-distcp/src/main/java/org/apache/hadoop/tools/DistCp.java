@@ -112,7 +112,9 @@ public class DistCp extends Configured implements Tool {
     }
     
     try {
+      //解析参数
       inputOptions = (OptionsParser.parse(argv));
+      //设置inputOptions和job config目标路径是否存在
       setTargetPathExists();
       LOG.info("Input Options: " + inputOptions);
     } catch (Throwable e) {
@@ -159,6 +161,7 @@ public class DistCp extends Configured implements Tool {
   }
 
   /**
+   * 创建MR任务，准备数据，设定数据输入格式，并把任务提交到hadoop集群运行，最后等待任务执行完毕
    * Create and submit the mapreduce job.
    * @return The mapreduce job object that has been submitted
    */
@@ -169,6 +172,17 @@ public class DistCp extends Configured implements Tool {
     try {
       synchronized(this) {
         //Don't cleanup while we are setting up.
+        /**
+         * metaFolder
+         * metafolder是DISTCP工具准备元数据的地方，在createMetaFolderPath()中会结合一个随机数生成一个工作目录，
+         * 在这个目录中迟点会通过getFileListingPath()生成fileList.seq文件，然后往这个文件中写入数据，
+         * 这是一个SequenceFile文件，即Key/Value结构的序列化文件，这个文件里将存放所有需要拷贝的源目录/文件信息列表。
+         * 其中Key是源文件的Text格式的相对路径，即relPath；而Value则记录源文件的FileStatus格式的org.apache.hadoop.fs.FileStatus信息，
+         * 这里FileStatus是hadoop已经封装好了的描述HDFS文件信息的类，但是DISTCP为了更好的处理数据，
+         * 重新继承并封装了CopyListingFileStatus类
+         *
+         * metafolder目录中的fileList.seq最终会作为参数传递给MR任务中的Mapper。
+         */
         metaFolder = createMetaFolderPath();
         jobFS = metaFolder.getFileSystem(getConf());
         job = createJob();
@@ -178,6 +192,7 @@ public class DistCp extends Configured implements Tool {
           inputOptions.disableUsingDiff();
         }
       }
+      //元数据生成 创建fileList.seq文件
       createInputFileListing(job);
 
       job.submit();
@@ -208,6 +223,7 @@ public class DistCp extends Configured implements Tool {
   }
 
   /**
+   * 设置inputOptions和job config目标路径是否存在
    * Set targetPathExists in both inputOptions and job config,
    * for the benefit of CopyCommitter
    */
@@ -226,13 +242,16 @@ public class DistCp extends Configured implements Tool {
    * @throws IOException - Exception if any
    */
   private Job createJob() throws IOException {
+    //distcp任务名称
     String jobName = "distcp";
     String userChosenName = getConf().get(JobContext.JOB_NAME);
     if (userChosenName != null)
       jobName += ": " + userChosenName;
     Job job = Job.getInstance(getConf());
     job.setJobName(jobName);
+    //这条语句保证了输入文件会按照我们预设的格式被读取,Mapper数据输入格式由UniformSizeInputFormat.class这个类定义的
     job.setInputFormatClass(DistCpUtils.getStrategy(getConf(), inputOptions));
+    //CopyMapper.class中则定义了每个map的工作逻辑，也就是拷贝的核心逻辑，任务提交到hadoop集群中运行时每个map就是根据这个逻辑进行工作的
     job.setJarByClass(CopyMapper.class);
     configureOutputFormat(job);
 
@@ -367,6 +386,10 @@ public class DistCp extends Configured implements Tool {
   }
 
   /**
+   *
+   * 前面提到在metafolder目录中会生成fileList.seq文件，而这个文件是怎么生成以及文件里面保存些什么内容呢？
+   * 这个逻辑就在createInputFileListing（job）中完成的
+   *
    * Create input listing by invoking an appropriate copy listing
    * implementation. Also add delegation tokens for each path
    * to job's credential store
@@ -376,9 +399,12 @@ public class DistCp extends Configured implements Tool {
    * @throws IOException - If any
    */
   protected Path createInputFileListing(Job job) throws IOException {
+    //1. 创建一个空的seq文件
     Path fileListingPath = getFileListingPath();
+    //构造buildListing实现类
     CopyListing copyListing = CopyListing.getCopyListing(job.getConfiguration(),
         job.getCredentials(), inputOptions);
+    //3.buildListing（）方法往这个seq文件写入数据
     copyListing.buildListing(fileListingPath, inputOptions);
     return fileListingPath;
   }
@@ -405,8 +431,10 @@ public class DistCp extends Configured implements Tool {
    */
   private Path createMetaFolderPath() throws Exception {
     Configuration configuration = getConf();
+    //stagingDir /tmp/hadoop-yarn/staging/data_platform/.staging
     Path stagingDir = JobSubmissionFiles.getStagingDir(
             new Cluster(configuration), configuration);
+    // ${stagingDir}/_distcp{rand.nextInt()}   _distcp-1820135602
     Path metaFolderPath = new Path(stagingDir, PREFIX + String.valueOf(rand.nextInt()));
     if (LOG.isDebugEnabled())
       LOG.debug("Meta folder location: " + metaFolderPath);

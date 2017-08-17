@@ -44,6 +44,9 @@ import org.apache.hadoop.tools.util.DistCpUtils;
 import org.apache.hadoop.util.StringUtils;
 
 /**
+ * CopyMapper.class中则定义了每个map的工作逻辑，也就是拷贝的核心逻辑，
+ * 任务提交到hadoop集群中运行时每个map就是根据这个逻辑进行工作的，通过setMapperClass设定
+ *
  * Mapper class that executes the DistCp copy operation.
  * Implements the o.a.h.mapreduce.Mapper interface.
  */
@@ -191,6 +194,7 @@ public class CopyMapper extends Mapper<Text, CopyListingFileStatus, Text, Text> 
   @Override
   public void map(Text relPath, CopyListingFileStatus sourceFileStatus,
           Context context) throws IOException, InterruptedException {
+    //map对应的源文件
     Path sourcePath = sourceFileStatus.getPath();
 
     if (LOG.isDebugEnabled())
@@ -216,6 +220,7 @@ public class CopyMapper extends Mapper<Text, CopyListingFileStatus, Text, Text> 
         sourceFS = sourcePath.getFileSystem(conf);
         final boolean preserveXAttrs =
             fileAttributes.contains(FileAttribute.XATTR);
+        //Converts a FileStatus to a CopyListingFileStatus.
         sourceCurrStatus = DistCpUtils.toCopyListingFileStatus(sourceFS,
           sourceFS.getFileStatus(sourcePath),
           fileAttributes.contains(FileAttribute.ACL), 
@@ -238,6 +243,7 @@ public class CopyMapper extends Mapper<Text, CopyListingFileStatus, Text, Text> 
             getFileType(targetStatus) + ", Source is " + getFileType(sourceCurrStatus));
       }
 
+      //源是目录,则在在目标集群创建目录
       if (sourceCurrStatus.isDirectory()) {
         createTargetDirsWithRetry(description, target, context);
         return;
@@ -272,6 +278,16 @@ public class CopyMapper extends Mapper<Text, CopyListingFileStatus, Text, Text> 
     return DistCpUtils.unpackAttributes(attributeString);
   }
 
+  /**
+   * copy数据
+   * @param description
+   * @param sourceFileStatus
+   * @param target
+   * @param context
+   * @param action
+   * @param fileAttributes
+     * @throws IOException
+     */
   private void copyFileWithRetry(String description,
       FileStatus sourceFileStatus, Path target, Context context,
       FileAction action, EnumSet<DistCpOptions.FileAttribute> fileAttributes)

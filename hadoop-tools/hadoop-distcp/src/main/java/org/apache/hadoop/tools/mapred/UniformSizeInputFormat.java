@@ -38,6 +38,10 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
+ * 在DISTCP中，UniformSizeInputFormat继承了InputFormat并实现了数据读入格式，
+ * 它会读取metafolder中fileList.seq序列化文件的内容，并根据用户设定的map数和拷贝总数据量进行分片，
+ * 计算出分多少片，最终提供“K-V”对供Mapper使用
+ *
  * UniformSizeInputFormat extends the InputFormat class, to produce
  * input-splits for DistCp.
  * It looks at the copy-listing and groups the contents into input-splits such
@@ -75,6 +79,7 @@ public class UniformSizeInputFormat
   private List<InputSplit> getSplits(Configuration configuration, int numSplits,
                                      long totalSizeBytes) throws IOException {
     List<InputSplit> splits = new ArrayList<InputSplit>(numSplits);
+    //每一个分片的文件大小 (总文件大小/分片数)
     long nBytesPerSplit = (long) Math.ceil(totalSizeBytes * 1.0 / numSplits);
 
     CopyListingFileStatus srcFileStatus = new CopyListingFileStatus();
@@ -83,6 +88,7 @@ public class UniformSizeInputFormat
     long lastSplitStart = 0;
     long lastPosition = 0;
 
+    //fileList.seq文件路径
     final Path listingFilePath = getListingFilePath(configuration);
 
     if (LOG.isDebugEnabled()) {
@@ -91,8 +97,12 @@ public class UniformSizeInputFormat
     }
     SequenceFile.Reader reader=null;
     try {
+      //读取fileList.seq文件
       reader = getListingFileReader(configuration);
       while (reader.next(srcRelPath, srcFileStatus)) {
+        //满足条件进行分片
+        //条件1:currentSplitSize + srcFileStatus.getLen() > nBytesPerSplit
+        //条件2:lastPosition != 0
         // If adding the current file would cause the bytes per map to exceed
         // limit. Add the current file to new split
         if (currentSplitSize + srcFileStatus.getLen() > nBytesPerSplit && lastPosition != 0) {
@@ -105,9 +115,12 @@ public class UniformSizeInputFormat
           lastSplitStart = lastPosition;
           currentSplitSize = 0;
         }
+        //累积文件大小,直到满足文件分片
         currentSplitSize += srcFileStatus.getLen();
         lastPosition = reader.getPosition();
       }
+
+      //最后一个分片
       if (lastPosition > lastSplitStart) {
         FileSplit split = new FileSplit(listingFilePath, lastSplitStart,
             lastPosition - lastSplitStart, null);
@@ -134,7 +147,7 @@ public class UniformSizeInputFormat
   }
 
   private SequenceFile.Reader getListingFileReader(Configuration configuration) {
-
+    //fileList.seq
     final Path listingFilePath = getListingFilePath(configuration);
     try {
       final FileSystem fileSystem = listingFilePath.getFileSystem(configuration);

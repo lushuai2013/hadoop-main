@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 
-/**
+/**CopyListing的默认实现类
  * GlobbedCopyListing implements the CopyListing interface, to create the copy
  * listing-file by "globbing" all specified source paths (wild-cards and all.)
  */

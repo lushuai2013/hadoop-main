@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
+ * DistCp参数对象, OptionsParser解析cli参数成参数对象
  * The Options class encapsulates all DistCp options.
  * These may be set from command-line (via the OptionsParser)
  * or may be set manually.
