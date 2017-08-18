@@ -106,6 +106,7 @@ public class JobSubmissionFiles {
    */
   public static Path getStagingDir(Cluster cluster, Configuration conf) 
   throws IOException,InterruptedException {
+    //map分片信息存储路径
     Path stagingArea = cluster.getStagingAreaDir();
     FileSystem fs = stagingArea.getFileSystem(conf);
     String realUser;

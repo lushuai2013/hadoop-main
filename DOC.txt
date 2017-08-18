@@ -1,2 +1,4 @@
 1.  hdfs fsck介绍
     http://blog.csdn.net/Androidlushangderen/article/details/50996821
+2. hadopp-distcp
+    http://www.sohu.com/a/132592072_609467

@@ -26,7 +26,8 @@ import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 
-/** 
+/**
+ * RMAuditLogger类记录每个用户对RM资源的使用记录
  * Manages ResourceManager audit logs. 
  *
  * Audit log format is written as key=value pairs. Tab separated.
