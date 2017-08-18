@@ -62,7 +62,9 @@ import org.apache.hadoop.util.Time;
 
 import com.google.common.annotations.VisibleForTesting;
 
-/** A class that receives a block and writes to its own disk, meanwhile
+/**
+ * 这个类又是DataNode的1个内部变量DataXceiver中会用到创建这个类
+ * A class that receives a block and writes to its own disk, meanwhile
  * may copies it to another site. If a throttler is provided,
  * streaming throttling is also supported.
  **/
@@ -921,6 +923,7 @@ class BlockReceiver implements Closeable {
             datanode.data.finalizeBlock(block);
           }
         }
+        //统计监控指标:blockWritten的block写次数的统计方法
         datanode.metrics.incrBlocksWritten();
       }
 

@@ -49,6 +49,13 @@ import org.apache.hadoop.metrics2.source.JvmMetrics;
 @Metrics(about="DataNode metrics", context="dfs")
 public class DataNodeMetrics {
 
+  /**
+   * Metric标准变量为DataNode定义的监控变量
+   * 变量的指标也是对应到metrics中的一个局部变量
+   *
+   * 基本这些DataNodeMetrics中的统计变量是被DataNode类直接调用以及他的子变量调用.
+   */
+
   @Metric MutableCounterLong bytesWritten;
   @Metric("Milliseconds spent writing")
   MutableCounterLong totalWriteTime;
@@ -123,6 +130,7 @@ public class DataNodeMetrics {
   @Metric MutableRate sendDataPacketTransferNanos;
   final MutableQuantiles[] sendDataPacketTransferNanosQuantiles;
 
+  //注册datanode监控类
   final MetricsRegistry registry = new MetricsRegistry("datanode");
   final String name;
   JvmMetrics jvmMetrics = null;
@@ -214,6 +222,9 @@ public class DataNodeMetrics {
     blocksReplicated.incr(delta);
   }
 
+  /**
+   * blockWritten的block写次数的统计方法
+   */
   public void incrBlocksWritten() {
     blocksWritten.incr();
   }

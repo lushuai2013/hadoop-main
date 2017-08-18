@@ -354,7 +354,12 @@ public class NameNode implements NameNodeStatusMXBean {
   public NamenodeProtocols getRpcServer() {
     return rpcServer;
   }
-  
+
+  /**
+   * 初始化namenode Metrics
+   * @param conf
+   * @param role
+     */
   static void initMetrics(Configuration conf, NamenodeRole role) {
     metrics = NameNodeMetrics.create(conf, role);
   }

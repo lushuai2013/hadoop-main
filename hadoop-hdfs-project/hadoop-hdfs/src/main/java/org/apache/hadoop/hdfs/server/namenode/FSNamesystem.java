@@ -686,6 +686,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
     }
     long timeTakenToLoadFSImage = monotonicNow() - loadStart;
     LOG.info("Finished loading FSImage in " + timeTakenToLoadFSImage + " msecs");
+    //更新FsImageLoadTime监控指标
     NameNodeMetrics nnMetrics = NameNode.getNameNodeMetrics();
     if (nnMetrics != null) {
       nnMetrics.setFsImageLoadTime((int) timeTakenToLoadFSImage);
@@ -5240,6 +5241,7 @@ public class FSNamesystem implements Namesystem, FSNamesystemMBean,
       long timeInSafemode = now() - startTime;
       NameNode.stateChangeLog.info("STATE* Leaving safe mode after " 
                                     + timeInSafemode/1000 + " secs");
+      //更新SafeModeTime监控指标
       NameNode.getNameNodeMetrics().setSafeModeTime((int) timeInSafemode);
 
       //Log the following only once (when transitioning from ON -> OFF)

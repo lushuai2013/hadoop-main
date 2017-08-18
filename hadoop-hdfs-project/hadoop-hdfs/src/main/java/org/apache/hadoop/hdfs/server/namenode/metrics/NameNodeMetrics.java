@@ -40,6 +40,7 @@ import org.apache.hadoop.metrics2.source.JvmMetrics;
  */
 @Metrics(name="NameNodeActivity", about="NameNode metrics", context="dfs")
 public class NameNodeMetrics {
+  //注册监控
   final MetricsRegistry registry = new MetricsRegistry("namenode");
 
   @Metric MutableCounterLong createFileOps;
@@ -150,6 +151,13 @@ public class NameNodeMetrics {
     }
   }
 
+  /**
+   * 注册NameNodeMetrics
+   * Namenode.initialize()->Namenode.initMetrics()->NameNodeMetrics.create()
+   * @param conf
+   * @param r
+   * @return
+     */
   public static NameNodeMetrics create(Configuration conf, NamenodeRole r) {
     String sessionId = conf.get(DFSConfigKeys.DFS_METRICS_SESSION_ID_KEY);
     String processName = r.toString();
