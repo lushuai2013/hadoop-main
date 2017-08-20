@@ -29,6 +29,12 @@ import org.apache.hadoop.yarn.api.records.Resource;
 
 import com.google.common.annotations.VisibleForTesting;
 
+/**
+ * NodeMangerMetrics即为应用于NodeManger类对象的一个具体MetricsSource管理类
+ *
+ * NodeMangerMetrics类似一个NodeManger中metrics的hub，它将提供方法生成MetricsSource，
+ * 管理这里用annotation方式（@Metric）声明的多个指标。
+ */
 @Metrics(about="Metrics for node manager", context="yarn")
 public class NodeManagerMetrics {
   @Metric MutableCounterInt containersLaunched;
@@ -52,12 +58,21 @@ public class NodeManagerMetrics {
   private long allocatedMB;
   private long availableMB;
 
+  /**
+   * NodeManager　调用create(DefaultMetricsSystem.instance())，参数中的DefaultMetricsSystem.instance()会生成一个MetricsSystem的单例，其实是一个MetricsSystemImpl对象
+   * @return
+     */
   public static NodeManagerMetrics create() {
     return create(DefaultMetricsSystem.instance());
   }
 
   static NodeManagerMetrics create(MetricsSystem ms) {
+    //将JvmMetrics register到了参数传进来的这个单例MetricsSystem中(即MetricsSystemImpl对象）
+    //而这个JvmMetrics其实就是MetricsSource的一个实现类
     JvmMetrics.create("NodeManager", null, ms);
+    //register NodeManagerMetrics　
+    //参数中的“new NodeManagerMetrics()”生成的并不是MetricsSource对象（因为NodeManagerMetrics并不是MetricsSource的实现类），
+    // register方法先将NodeManagerMetrics转换为MetricsSource．再然后，调用registerSource方法，将Metrics注册到MetricsSystem当中：
     return ms.register(new NodeManagerMetrics());
   }
 

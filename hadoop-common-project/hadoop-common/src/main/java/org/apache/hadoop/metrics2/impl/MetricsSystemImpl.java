@@ -81,7 +81,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
   enum InitMode { NORMAL, STANDBY }
 
   private final Map<String, MetricsSourceAdapter> sources;
-  private final Map<String, MetricsSource> allSources;
+  private final Map<String, MetricsSource> allSources;//MetricsSystemImpl用一个HashMap类型的属性sources将所有的source管理起来
   private final Map<String, MetricsSinkAdapter> sinks;
   private final Map<String, MetricsSink> allSinks;
 
@@ -142,6 +142,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
   }
 
   /**
+   * 初始化　metrics system
    * Initialized the metrics system with a prefix.
    * @param prefix  the system will look for configs with the prefix
    * @return the metrics system object itself
@@ -161,7 +162,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     }
     switch (initMode()) {
       case NORMAL:
-        try { start(); }
+        try { start(); }//init进而调用start
         catch (MetricsConfigException e) {
           // Configuration errors (e.g., typos) should not be fatal.
           // We can always start the metrics system later via JMX.
@@ -176,6 +177,9 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     return this;
   }
 
+  /**
+   * 在start方法中，启动了一个startTimer定时器：
+   */
   @Override
   public synchronized void start() {
     checkNotNull(prefix, "prefix");
@@ -219,8 +223,21 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     for (Callback cb : namedCallbacks.values()) cb.postStop();
   }
 
+  /**
+   * 注册MetricSource，
+   * １.NodeManagerMetrics转换成MetricsSource的过程
+   * 2.注册MetricsSource
+   * @param name  of the source. Must be unique or null (then extracted from
+   *              the annotations of the source object.)
+   * @param desc  the description of the source (or null. See above.)
+   * @param source object to register
+   * @param <T>
+     * @return
+     */
   @Override public synchronized <T>
   T register(String name, String desc, T source) {
+    //经过MetricsAnnotations.newSourceBuilder，以及MetricsSourceBuilder.build两个方法的调用
+    //将一个普通的对象，转换成了MetricsSource
     MetricsSourceBuilder sb = MetricsAnnotations.newSourceBuilder(source);
     final MetricsSource s = sb.build();
     MetricsInfo si = sb.info();
@@ -228,8 +245,10 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     final String finalDesc = desc == null ? si.description() : desc;
     final String finalName = // be friendly to non-metrics tests
         DefaultMetricsSystem.sourceName(name2, !monitoring);
+    //MetricsSystemImpl用一个HashMap类型的属性sources将所有的source管理起来
     allSources.put(finalName, s);
     LOG.debug(finalName +", "+ finalDesc);
+    //再然后，调用registerSource方法，将Metrics注册到MetricsSystem当中
     if (monitoring) {
       registerSource(finalName, finalDesc, s);
     }
@@ -257,6 +276,12 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     }
   }
 
+  /**
+   * source在这里都被一个MetricsSourceAdapter进行封装
+   * @param name
+   * @param desc
+   * @param source
+     */
   synchronized
   void registerSource(String name, String desc, MetricsSource source) {
     checkNotNull(config, "config");
@@ -356,6 +381,9 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     return writer.toString();
   }
 
+  /**
+   * 定时器在定时触发的处理函数onTimerEvent中，先后触发sampleMetrics，以及publishMetrics两个方法
+   */
   private synchronized void startTimer() {
     if (timer != null) {
       LOG.warn(prefix +" metrics system timer already started!");
@@ -380,6 +408,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
   synchronized void onTimerEvent() {
     logicalTime += period;
     if (sinks.size() > 0) {
+      //publishMetrics sampleMetrics
       publishMetrics(sampleMetrics(), false);
     }
   }
@@ -394,7 +423,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     }    
   }
 
-  /**
+  /**sampleMetrics返回的buffer，会作为publishMetrics调用时的第一个参数。
    * Sample all the sources for a snapshot of metrics/tags
    * @return  the metrics buffer containing the snapshot
    */
@@ -402,7 +431,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
   public synchronized MetricsBuffer sampleMetrics() {
     collector.clear();
     MetricsBufferBuilder bufferBuilder = new MetricsBufferBuilder();
-
+    //遍历之前向MetricsSystem注册过的Source，调用其getMetrics方法，并放到buffer当中返回
     for (Entry<String, MetricsSourceAdapter> entry : sources.entrySet()) {
       if (sourceFilter == null || sourceFilter.accepts(entry.getKey())) {
         snapshotMetrics(entry.getValue(), bufferBuilder);
@@ -425,6 +454,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
   }
 
   /**
+   * 遍历之前注册到MetricsSystem上的Sink（注册过程跟Source类似），调用他们的putMetrics方法，将buffer中的内容发送到指标的目的地。
    * Publish a metrics snapshot to all the sinks
    * @param buffer  the metrics snapshot to publish
    * @param immediate  indicates that we should publish metrics immediately

@@ -41,6 +41,7 @@ import static org.apache.hadoop.metrics2.impl.MsInfo.*;
 import org.apache.hadoop.util.JvmPauseMonitor;
 
 /**
+ * JvmMetrics是MetricsSource的一个实现类
  * JVM and logging related metrics.
  * Mostly used by various servers as a part of the metrics they export.
  */

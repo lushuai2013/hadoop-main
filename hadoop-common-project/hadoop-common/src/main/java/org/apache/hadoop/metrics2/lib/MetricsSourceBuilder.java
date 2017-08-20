@@ -49,6 +49,11 @@ public class MetricsSourceBuilder {
   private boolean hasAtMetric = false;
   private boolean hasRegistry = false;
 
+  /**
+   * 获取构造函数传入的Object对象中用annotation声明的所有Metrics
+   * @param source
+   * @param factory
+     */
   MetricsSourceBuilder(Object source, MutableMetricsFactory factory) {
     this.source = checkNotNull(source, "source");
     this.factory = checkNotNull(factory, "mutable metrics factory");

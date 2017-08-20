@@ -28,6 +28,10 @@ import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.impl.MetricsSystemImpl;
 
 /**
+ * DefaultMetricsSystem为枚举类型，其中声明了AtomicReference类型的实例impl属性，
+ * 用AtomicReference实现多线程同时申请实例时可能出现的冲突。真正的单例对象，实际由new MetricsSystemImpl()产生。
+ 因此，默认情况下，MetricsSystem的单例对象为MetricsSystemImpl的实例。
+
  * The default metrics system singleton
  */
 @InterfaceAudience.Public
@@ -42,6 +46,7 @@ public enum DefaultMetricsSystem {
   transient final UniqueNames sourceNames = new UniqueNames();
 
   /**
+   * MetricsSystem的实现类MetricsSystemImpl的init方法会被调用
    * Convenience method to initialize the metrics system
    * @param prefix  for the metrics system configuration
    * @return the metrics system instance
