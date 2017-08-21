@@ -65,6 +65,8 @@ public class HsWebApp extends WebApp implements AMParams {
         CONTAINER_LOG_TYPE), HsController.class, "logs");
     route(pajoin("/nmlogs", NM_NODENAME, CONTAINER_ID, ENTITY_STRING, APP_OWNER,
         CONTAINER_LOG_TYPE), HsController.class, "nmlogs");
+    route(pajoin("/slowtasks", SLOW_TASKS_TYPE), HsController.class, "slowTasks");
+
   }
 }
 

@@ -34,6 +34,7 @@ import org.apache.hadoop.yarn.webapp.view.HtmlBlock;
 import com.google.inject.Inject;
 
 /**
+ * jobhistory信息展示页面 (扩展job信息)
  * Render all of the jobs that the history server is aware of.
  */
 public class HsJobsBlock extends HtmlBlock {
@@ -66,7 +67,17 @@ public class HsJobsBlock extends HtmlBlock {
             th("Maps Total").
             th("Maps Completed").
             th("Reduces Total").
-            th("Reduces Completed")._()._().
+            th("Reduces Completed"). //增加job记录信息展示项
+            th("Running Time").
+            th("UberTask").
+            th("Avg MapTime").
+            th("Avg MergeTime").
+            th("Avg ShuffleTime").
+            th("Avg ReduceTime").
+            th("Failed MapAttempts").
+            th("Failed ReduceAttempts").
+            th("Successed MapAttempts").
+            th("Successed ReduceAttempts")._()._().
         tbody();
     LOG.info("Getting list of all Jobs.");
     // Write all the data into a JavaScript array of arrays for JQuery
@@ -90,7 +101,17 @@ public class HsJobsBlock extends HtmlBlock {
       .append(String.valueOf(job.getMapsTotal())).append("\",\"")
       .append(String.valueOf(job.getMapsCompleted())).append("\",\"")
       .append(String.valueOf(job.getReducesTotal())).append("\",\"")
-      .append(String.valueOf(job.getReducesCompleted())).append("\"],\n");
+      .append(String.valueOf(job.getReducesCompleted())).append("\"],\n")
+      .append(String.valueOf(secToTime(((job.getFinishTime()-job.getStartTime())/1000)))).append("\",\"")
+      .append(job.isUber()).append("\",\"")
+      .append(String.valueOf(secToTime(job.getAvgMapTime()/1000))).append("\",\"")
+      .append(String.valueOf(secToTime(job.getAvgMergeTime()/1000))).append("\",\"")
+      .append(String.valueOf(secToTime(job.getAvgShuffleTime()/1000))).append("\",\"")
+      .append(String.valueOf(secToTime(job.getAvgReduceTime()/1000))).append("\",\"")
+      .append(String.valueOf(job.getFailedMapAttempts())).append("\",\"")
+      .append(String.valueOf(job.getFailedReduceAttempts())).append("\",\"")
+      .append(String.valueOf(job.getSuccessfulMapAttempts())).append("\",\"")
+      .append(String.valueOf(job.getSuccessfulReduceAttempts())).append("\"],\n");;
     }
 
     //Remove the last comma and close off the array of arrays
@@ -118,5 +139,38 @@ public class HsJobsBlock extends HtmlBlock {
         _().
       _().
     _();
+  }
+
+
+  public static String secToTime(long time) {
+    String timeStr = null;
+    long hour = 0;
+    long minute = 0;
+    long second = 0;
+    if (time <= 0)
+      return "00:00:00";
+    else {
+      minute = time / 60;
+      if (minute < 60) {
+        second = time % 60;
+        timeStr = "00:" + unitFormat(minute) + ":" + unitFormat(second);
+      } else {
+        hour = minute / 60;
+        if (hour > 99)
+          return "99:59:59";
+        minute = minute % 60;
+        second = time - hour * 3600 - minute * 60;
+        timeStr = unitFormat(hour) + ":" + unitFormat(minute) + ":" + unitFormat(second);
+      }
+    }
+    return timeStr;
+  }
+  public static String unitFormat(long i) {
+    String retStr = null;
+    if (i >= 0 && i < 10)
+      retStr = "0" + Long.toString(i);
+    else
+      retStr = "" + i;
+    return retStr;
   }
 }
