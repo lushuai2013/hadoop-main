@@ -23,6 +23,7 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.metrics2.MetricsRecordBuilder;
 
 /**
+ * 抽象父类的 MutableMetric 的方法 snapshot 很特别，他返回的是上一次的快照，并通过 changed 来判定是否发生数据变化，这样只需要在数据变动的时候投递 Metrics
  * The mutable metric interface
  */
 @InterfaceAudience.Public

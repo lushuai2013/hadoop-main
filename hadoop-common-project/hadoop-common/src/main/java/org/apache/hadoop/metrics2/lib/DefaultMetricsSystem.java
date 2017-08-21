@@ -47,6 +47,7 @@ public enum DefaultMetricsSystem {
 
   /**
    * MetricsSystem的实现类MetricsSystemImpl的init方法会被调用
+   * 以NodeManngaer为例 在NodeManger初始化时 serviceInit调用DefaultMetricsSystem.initialize
    * Convenience method to initialize the metrics system
    * @param prefix  for the metrics system configuration
    * @return the metrics system instance

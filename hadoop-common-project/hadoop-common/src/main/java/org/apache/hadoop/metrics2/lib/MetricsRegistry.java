@@ -33,6 +33,7 @@ import org.apache.hadoop.metrics2.MetricsTag;
 import org.apache.hadoop.metrics2.impl.MsInfo;
 
 /**
+ * MetricsRegistry 用来管理 hadoop-metrics2 的几种基本类型的 Metircs ，如： Gauge ， Couter ， Stat 等，并且这些 Metircs 都继承自 MutableMetric 。
  * An optional metrics registry class for creating and maintaining a
  * collection of MetricsMutables, making writing metrics source easier.
  */

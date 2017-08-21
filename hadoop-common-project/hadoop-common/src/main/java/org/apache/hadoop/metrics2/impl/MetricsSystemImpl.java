@@ -82,7 +82,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
 
   private final Map<String, MetricsSourceAdapter> sources;
   private final Map<String, MetricsSource> allSources;//MetricsSystemImpl用一个HashMap类型的属性sources将所有的source管理起来
-  private final Map<String, MetricsSinkAdapter> sinks;
+  private final Map<String, MetricsSinkAdapter> sinks;//记录所有\所有MetricsSinkAdapter
   private final Map<String, MetricsSink> allSinks;
 
   // The callback list is used by register(Callback callback), while
@@ -142,9 +142,15 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
   }
 
   /**
-   * 初始化　metrics system
+   * 初始化　metrics system, 监控组件一般扎起初始化时调用该方法
+   * 该方法主要实现以下动作:
+   * 1.启动startTimer定时器
+   * 2.MetricsSink 进行包装，生成 MetricsSinkAdapter
+   *
    * Initialized the metrics system with a prefix.
    * @param prefix  the system will look for configs with the prefix
+   *                DefaultMetricsSystem.initialize("NodeManager");   prefix=NodeManager
+   *                DefaultMetricsSystem.initialize("DataNode");   prefix=DataNode
    * @return the metrics system object itself
    */
   @Override
@@ -190,7 +196,9 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     }
     for (Callback cb : callbacks) cb.preStart();
     for (Callback cb : namedCallbacks.values()) cb.preStart();
+    //注册MetricsSinkAdapter和MetricsSourceAdapter
     configure(prefix);
+    //启动定时器
     startTimer();
     monitoring = true;
     LOG.info(prefix +" metrics system started");
@@ -507,8 +515,11 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
   }
 
   private synchronized void configure(String prefix) {
+    //加载prefix前缀的配置信息
     config = MetricsConfig.create(prefix);
+    //配置MetricsSinkAdapter
     configureSinks();
+    //配置MetricsSourceAdapter
     configureSources();
     configureSystem();
   }
@@ -517,11 +528,16 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     injectedTags.add(Interns.tag(MsInfo.Hostname, getHostname()));
   }
 
+  /**
+   * MetricsSink 进行包装，生成 MetricsSinkAdapter
+   */
   private synchronized void configureSinks() {
+    //加载sink相关配置
     sinkConfigs = config.getInstanceConfigs(SINK_KEY);
     int confPeriod = 0;
     for (Entry<String, MetricsConfig> entry : sinkConfigs.entrySet()) {
       MetricsConfig conf = entry.getValue();
+      //间隔
       int sinkPeriod = conf.getInt(PERIOD_KEY, PERIOD_DEFAULT);
       confPeriod = confPeriod == 0 ? sinkPeriod
                                    : ArithmeticUtils.gcd(confPeriod, sinkPeriod);
@@ -531,6 +547,7 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
       try {
         MetricsSinkAdapter sa = newSink(sinkName,
             conf.getString(DESC_KEY, sinkName), conf);
+        //MetricsSinkAdapter线程启动
         sa.start();
         sinks.put(sinkName, sa);
       }
@@ -560,7 +577,11 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     return newSink(name, desc, (MetricsSink) conf.getPlugin(""), conf);
   }
 
+  /**
+   * 注册MetricsSourceAdapter
+   */
   private void configureSources() {
+    //加载source filter
     sourceFilter = config.getFilter(PREFIX_DEFAULT + SOURCE_FILTER_KEY);
     sourceConfigs = config.getInstanceConfigs(SOURCE_KEY);
     registerSystemSource();
@@ -583,6 +604,9 @@ public class MetricsSystemImpl extends MetricsSystem implements MetricsSource {
     return "localhost";
   }
 
+  /**
+   * 注册MetricsSourceAdapter
+   */
   private void registerSystemSource() {
     MetricsConfig sysConf = sourceConfigs.get(MS_NAME);
     sysSource = new MetricsSourceAdapter(prefix, MS_STATS_NAME, MS_STATS_DESC,

@@ -38,6 +38,8 @@ import org.apache.hadoop.metrics2.MetricsSink;
 import org.apache.hadoop.util.Time;
 
 /**
+ * 一开始在完成配置加载后， MetricsSystem 对 MetricsSink 进行了包装，生成了 MetricsSinkAdapter ，这里主要是为了增加对 Metrics 的吞吐量的管理。
+ * 每一个 MetricsSinkAdapter 内部都有一个 SinkQueue 用于数据缓冲并添加了重试逻辑。
  * An adapter class for metrics sink and associated filters
  */
 class MetricsSinkAdapter implements SinkQueue.Consumer<MetricsBuffer> {
