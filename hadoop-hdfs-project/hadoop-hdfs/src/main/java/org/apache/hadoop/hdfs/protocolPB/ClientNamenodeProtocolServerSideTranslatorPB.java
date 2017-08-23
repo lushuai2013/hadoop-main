@@ -362,8 +362,11 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       RpcController controller, GetBlockLocationsRequestProto req)
       throws ServiceException {
     try {
+      //下面这个server是由NameNodeRpcServer类生成的对象，定义了HDFS元数据操作逻辑。
       LocatedBlocks b = server.getBlockLocations(req.getSrc(), req.getOffset(),
           req.getLength());
+      //由于server返回的是NameNode内存中的数据结构，要把这个结果通过RPC传回client端，
+      //那么我们需要利用PB框架提供的对应Message的Builder类，把内存中的数据结构通过这个接口序列化。
       Builder builder = GetBlockLocationsResponseProto
           .newBuilder();
       if (b != null) {

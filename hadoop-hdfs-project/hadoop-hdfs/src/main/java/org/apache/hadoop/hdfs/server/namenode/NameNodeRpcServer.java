@@ -225,56 +225,62 @@ class NameNodeRpcServer implements NamenodeProtocols {
     int handlerCount = 
       conf.getInt(DFS_NAMENODE_HANDLER_COUNT_KEY, 
                   DFS_NAMENODE_HANDLER_COUNT_DEFAULT);
-
+    //设置ProtolEngine，目前只支持PB协议。表示接收到的RPC协议如果是ClientNamenodeProtocolPB，那么处理这个RPC协议的引擎是ProtobufRpcEngine
     RPC.setProtocolEngine(conf, ClientNamenodeProtocolPB.class,
         ProtobufRpcEngine.class);
-
+    //1.创建ServerSideTranslatorPB
+    //声明一个ClientNamenodeProtocolServerSideTranslatorPB,这个类负责把Server接收到的PB格式对象的数据，拼装成NameNode的数据类型，
+    //调用NameNodeRpcServer类中相应的逻辑，然后再把执行结果拼装成PB格式。
     ClientNamenodeProtocolServerSideTranslatorPB 
        clientProtocolServerTranslator = 
          new ClientNamenodeProtocolServerSideTranslatorPB(this);
-     BlockingService clientNNPbService = ClientNamenodeProtocol.
+
+    //ClientNamenodeProtocol是protoc编译生成的ClientNamenodeProtocolProtos类中的inner class。
+    //newReflectiveBlockingService方法也是由protoc编译器自动生成的。这个方法会返回一个com.google.protobuf.BlockingService类型的对象，这种类型的对象定义了RPC的各种服务
+    //Client和NameNode之间的ClientNamenodeProtocol协议的服务
+    BlockingService clientNNPbService = ClientNamenodeProtocol.
          newReflectiveBlockingService(clientProtocolServerTranslator);
-    
+    //dnProtoPbService
     DatanodeProtocolServerSideTranslatorPB dnProtoPbTranslator = 
         new DatanodeProtocolServerSideTranslatorPB(this);
     BlockingService dnProtoPbService = DatanodeProtocolService
         .newReflectiveBlockingService(dnProtoPbTranslator);
-
+    //NNPbService
     NamenodeProtocolServerSideTranslatorPB namenodeProtocolXlator = 
         new NamenodeProtocolServerSideTranslatorPB(this);
     BlockingService NNPbService = NamenodeProtocolService
           .newReflectiveBlockingService(namenodeProtocolXlator);
-    
+    //refreshAuthService
     RefreshAuthorizationPolicyProtocolServerSideTranslatorPB refreshAuthPolicyXlator = 
         new RefreshAuthorizationPolicyProtocolServerSideTranslatorPB(this);
     BlockingService refreshAuthService = RefreshAuthorizationPolicyProtocolService
         .newReflectiveBlockingService(refreshAuthPolicyXlator);
-
+    //refreshUserMappingService
     RefreshUserMappingsProtocolServerSideTranslatorPB refreshUserMappingXlator = 
         new RefreshUserMappingsProtocolServerSideTranslatorPB(this);
     BlockingService refreshUserMappingService = RefreshUserMappingsProtocolService
         .newReflectiveBlockingService(refreshUserMappingXlator);
-
+    //refreshCallQueueService
     RefreshCallQueueProtocolServerSideTranslatorPB refreshCallQueueXlator = 
         new RefreshCallQueueProtocolServerSideTranslatorPB(this);
     BlockingService refreshCallQueueService = RefreshCallQueueProtocolService
         .newReflectiveBlockingService(refreshCallQueueXlator);
-
+    //genericRefreshService
     GenericRefreshProtocolServerSideTranslatorPB genericRefreshXlator =
         new GenericRefreshProtocolServerSideTranslatorPB(this);
     BlockingService genericRefreshService = GenericRefreshProtocolService
         .newReflectiveBlockingService(genericRefreshXlator);
-
+    //getUserMappingService
     GetUserMappingsProtocolServerSideTranslatorPB getUserMappingXlator = 
         new GetUserMappingsProtocolServerSideTranslatorPB(this);
     BlockingService getUserMappingService = GetUserMappingsProtocolService
         .newReflectiveBlockingService(getUserMappingXlator);
-    
+    //haPbService
     HAServiceProtocolServerSideTranslatorPB haServiceProtocolXlator = 
         new HAServiceProtocolServerSideTranslatorPB(this);
     BlockingService haPbService = HAServiceProtocolService
         .newReflectiveBlockingService(haServiceProtocolXlator);
-
+    //traceAdminService
     TraceAdminProtocolServerSideTranslatorPB traceAdminXlator =
         new TraceAdminProtocolServerSideTranslatorPB(this);
     BlockingService traceAdminService = TraceAdminService
@@ -304,7 +310,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
           .setSecretManager(namesystem.getDelegationTokenSecretManager())
           .build();
 
-      // Add all the RPC protocols that the namenode implements
+      //2. for serviceRpcServer: Add all the RPC protocols that the namenode implements
       DFSUtil.addPBProtocol(conf, HAServiceProtocolPB.class, haPbService,
           serviceRpcServer);
       DFSUtil.addPBProtocol(conf, NamenodeProtocolPB.class, NNPbService,
@@ -340,7 +346,10 @@ class NameNodeRpcServer implements NamenodeProtocols {
       bindHost = rpcAddr.getHostName();
     }
     LOG.info("RPC server is binding to " + bindHost + ":" + rpcAddr.getPort());
-
+    //创建clientRpcServer   build()->Rpc.build()->ProtobufRpcEngine.getServer()
+    //RPC.getServer()函数生成一个Server对象，负责接收网络连接，读取数据，调用处理数据函数，返回结果
+   //前两个参数表示如果RPC发送过来的是ClientNamenodeProtocolPB协议，那么负责处理这个协议的服务（com.google.protobuf.BlockingService类型的对象）就是clientNNPbService。
+   //getServer()会经过层层调用，因为现在默认的RPCEngine是ProtobufRpcEngine getServer
     this.clientRpcServer = new RPC.Builder(conf)
         .setProtocol(
             org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolPB.class)
@@ -349,7 +358,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
         .setVerbose(false)
         .setSecretManager(namesystem.getDelegationTokenSecretManager()).build();
 
-    // Add all the RPC protocols that the namenode implements
+    //3. for clientRpcServer: Add all the RPC protocols that the namenode implements
     DFSUtil.addPBProtocol(conf, HAServiceProtocolPB.class, haPbService,
         clientRpcServer);
     DFSUtil.addPBProtocol(conf, NamenodeProtocolPB.class, NNPbService,
@@ -389,7 +398,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
         DFSConfigKeys.DFS_NAMENODE_MIN_SUPPORTED_DATANODE_VERSION_KEY,
         DFSConfigKeys.DFS_NAMENODE_MIN_SUPPORTED_DATANODE_VERSION_DEFAULT);
 
-    // Set terse exception whose stack trace won't be logged
+    //在client端，会通过ProtobufHelper.getRemoteException()把封装在ServiceException中的IOException获取出来
+    //Set terse exception whose stack trace won't be logged
     this.clientRpcServer.addTerseExceptions(SafeModeException.class,
         FileNotFoundException.class,
         HadoopIllegalArgumentException.class,

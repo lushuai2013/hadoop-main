@@ -496,9 +496,28 @@ public class ProtobufRpcEngine implements RpcEngine {
     return CLIENTS.getClient(conf, SocketFactory.getDefault(),
         RpcResponseWrapper.class);
   }
-  
- 
 
+
+    /**
+     * 生成一个Server对象，负责接收网络连接，读取数据，调用处理数据函数，返回结果
+     * 这个Server对象里有Listener, Handler, Responder内部类，分别开启多个线程负责监听、读取、处理和返回结果。
+     * 在这生成了一个Server对象，就是用于接收client端RPC请求，处理，回复的Server,这个Server对象是一个纯粹的网络服务的Server，在RPC中起到基础网络IO服务的作用。
+     *
+     * @param protocol the class of protocol to use
+     * @param protocolImpl
+     * @param bindAddress the address to bind on to listen for connection
+     * @param port the port to listen for connections on
+     * @param numHandlers the number of method handler threads to run
+     * @param numReaders the number of reader threads to run
+     * @param queueSizePerHandler the size of the queue per hander thread
+     * @param verbose whether each call should be logged
+     * @param conf the configuration to use
+     * @param secretManager The secret manager to use to validate incoming requests.
+     * @param portRangeConfig A config parameter that can be used to restrict
+     *        the range of ports used when port is 0 (an ephemeral port)
+     * @return
+     * @throws IOException
+     */
   @Override
   public RPC.Server getServer(Class<?> protocol, Object protocolImpl,
       String bindAddress, int port, int numHandlers, int numReaders,
@@ -510,7 +529,10 @@ public class ProtobufRpcEngine implements RpcEngine {
         numHandlers, numReaders, queueSizePerHandler, verbose, secretManager,
         portRangeConfig);
   }
-  
+
+  /**
+   * 责接收网络连接，读取数据，调用处理数据函数
+   */
   public static class Server extends RPC.Server {
     /**
      * Construct an RPC server.
@@ -565,6 +587,10 @@ public class ProtobufRpcEngine implements RpcEngine {
 
       @Override 
       /**
+       * 首先校验这个请求发过来的数据是不是合理的。
+       * 然后就是获取实现这个协议的服务。实现协议的服务在初始化的时候已经注册过了，就是com.google.protobuf.BlockingService类型的对象
+       * Server.call()->RPC.Server.call()->Server.getRpcInvoker()->ProtobufRpcInvoker.call()
+       *
        * This is a server side method, which is invoked over RPC. On success
        * the return response has protobuf response payload. On failure, the
        * exception name and the stack trace are return in the resposne.
