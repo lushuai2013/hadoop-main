@@ -283,6 +283,7 @@ public class ContainersMonitorImpl extends AbstractService implements
 
 
   /**
+   *  线程中监控 Container 的 pmem（物理内存）和 vmem（虚拟内存）的使用情况
    * Check whether a container's process tree's current memory usage is over
    * limit.
    *
@@ -317,7 +318,7 @@ public class ContainersMonitorImpl extends AbstractService implements
                                   long curMemUsageOfAgedProcesses,
                                   long vmemLimit) {
     boolean isOverLimit = false;
-
+    //如果当前 vmem 大于 vmemLimit 的限制，或者 olderThanAge（与 JVM 内存分代相关）的内存大于限制，则 kill 掉进程：
     if (currentMemUsage > (2 * vmemLimit)) {
       LOG.warn("Process tree for container: " + containerId
           + " running over twice " + "the configured limit. Limit=" + vmemLimit
@@ -508,7 +509,7 @@ public class ContainersMonitorImpl extends AbstractService implements
               isMemoryOverLimit = true;
               containerExitStatus = ContainerExitStatus.KILLED_EXCEEDED_PMEM;
             }
-
+            //kill 进程的代码
             if (isMemoryOverLimit) {
               // Virtual or physical memory over limit. Fail the container and
               // remove

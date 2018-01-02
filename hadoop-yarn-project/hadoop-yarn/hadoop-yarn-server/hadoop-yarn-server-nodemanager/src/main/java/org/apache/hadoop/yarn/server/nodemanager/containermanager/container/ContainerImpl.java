@@ -492,7 +492,9 @@ public class ContainerImpl implements Container {
   // resource usage.
   @SuppressWarnings("unchecked") // dispatcher not typed
   private void sendContainerMonitorStartEvent() {
+      // Container 的物理内存大小
       long pmemBytes = getResource().getMemory() * 1024 * 1024L;
+      // Container 的虚拟内存大小
       float pmemRatio = daemonConf.getFloat(
           YarnConfiguration.NM_VMEM_PMEM_RATIO,
           YarnConfiguration.DEFAULT_NM_VMEM_PMEM_RATIO);
