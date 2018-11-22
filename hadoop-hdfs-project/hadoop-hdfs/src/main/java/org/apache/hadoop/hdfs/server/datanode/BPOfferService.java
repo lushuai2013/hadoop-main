@@ -652,7 +652,7 @@ class BPOfferService {
       cmd instanceof BlockIdCommand ? (BlockIdCommand)cmd: null;
 
     switch(cmd.getAction()) {
-    case DatanodeProtocol.DNA_TRANSFER:
+    case DatanodeProtocol.DNA_TRANSFER:   //DNA_TRANSFER 命令，其中包括下线节点，复制数据
       // Send a copy of a block to another datanode
       dn.transferBlocks(bcmd.getBlockPoolId(), bcmd.getBlocks(),
           bcmd.getTargets(), bcmd.getTargetStorageTypes());

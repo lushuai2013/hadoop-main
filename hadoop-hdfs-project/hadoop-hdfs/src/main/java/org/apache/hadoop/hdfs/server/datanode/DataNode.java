@@ -1915,9 +1915,16 @@ public class DataNode extends ReconfigurableBase
         xfersBuilder.append(xferTargets[i]);
         xfersBuilder.append(" ");
       }
+
+      //org.apache.hadoop.hdfs.server.datanode.DataNode: DatanodeRegistration(10.110.101.155:50010,
+      // datanodeUuid=dd270900-ad35-4823-8e8c-9b51806d3aa8, infoPort=50075, infoSecurePort=0, ipcPort=50020,
+      // storageInfo=lv=-56;cid=CID-86934726-f787-4b63-bf7c-a42a44013e20;nsid=569847972;c=0)
+      // Starting thread to transfer BP-1751526745-10.110.50.91-1501144820217:blk_2573336288_1508702432 to
+      // 10.110.101.166:50010 10.110.156.147:50010
       LOG.info(bpReg + " Starting thread to transfer " + 
                block + " to " + xfersBuilder);                       
 
+      //启动后台线程，开始转移数据
       new Daemon(new DataTransfer(xferTargets, xferTargetStorageTypes, block,
           BlockConstructionStage.PIPELINE_SETUP_CREATE, "")).start();
     }
@@ -2026,6 +2033,7 @@ public class DataNode extends ReconfigurableBase
    ************************************************************************ */
 
   /**
+   * DataTransfer 实现类
    * Used for transferring a block of data.  This class
    * sends a piece of data to another DataNode.
    */
@@ -2066,6 +2074,7 @@ public class DataNode extends ReconfigurableBase
     }
 
     /**
+     * 下线节点创建socket链接，目标节点为选取targets节点。
      * Do the deed, write the bytes
      */
     @Override
@@ -2123,6 +2132,7 @@ public class DataNode extends ReconfigurableBase
         blockSender.sendBlock(out, unbufOut, null);
 
         // no response necessary
+        // Transmitted BP-1751526745-10.110.50.91-1501144820217:blk_2573336288_1508702432 (numBytes=47806) to /10.110.101.166:50010
         LOG.info(getClass().getSimpleName() + ": Transmitted " + b
             + " (numBytes=" + b.getNumBytes() + ") to " + curTarget);
 

@@ -48,6 +48,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.hadoop.util.Time.monotonicNow;
 
 /**
+ *
+ * decommisionMannager,decommision操作管理器
  * Manages datanode decommissioning. A background monitor thread 
  * periodically checks the status of datanodes that are in-progress of 
  * decommissioning.
@@ -192,6 +194,7 @@ public class DecommissionManager {
   }
 
   /**
+   * datanode in exclude file
    * Start decommissioning the specified datanode. 
    * @param node
    */
@@ -206,6 +209,7 @@ public class DecommissionManager {
           LOG.info("Starting decommission of {} {} with {} blocks",
               node, storage, storage.numBlocks());
         }
+        //设置节点decommison开始时间
         node.decommissioningStatus.setStartTime(monotonicNow());
         pendingNodes.add(node);
       }
@@ -399,6 +403,7 @@ public class DecommissionManager {
     }
 
     /**
+     * maxConcurrentTrackedNodes 默认被监控的下线节点的数为100
      * Pop datanodes off the pending list and into decomNodeBlocks, 
      * subject to the maxConcurrentTrackedNodes limit.
      */

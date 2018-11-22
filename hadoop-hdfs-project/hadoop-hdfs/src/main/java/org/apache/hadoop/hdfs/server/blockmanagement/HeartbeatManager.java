@@ -226,6 +226,7 @@ class HeartbeatManager implements DatanodeStatistics {
     stats.add(node);
   }
 
+  // Update DN stats maintained by HeartbeatManager
   synchronized void startDecommission(final DatanodeDescriptor node) {
     if (!node.isAlive) {
       LOG.info("Dead node {} is decommissioned immediately.", node);

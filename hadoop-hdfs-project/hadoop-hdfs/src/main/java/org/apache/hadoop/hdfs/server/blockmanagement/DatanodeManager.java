@@ -1004,6 +1004,9 @@ public class DatanodeManager {
   }
 
   /**
+   * Decommision代码跟踪分析
+   * decommision操作的触发是因为添加了execlude文件，然后再输入refreshNode命令开始的，与此就会对应到了FSNamesystem的同名方法
+   * 
    * Rereads conf to get hosts and exclude list file names.
    * Rereads the files to update the hosts and exclude lists.  It
    * checks if any of the hosts have changed states:
